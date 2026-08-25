@@ -6,269 +6,783 @@
 monte-carlo-options/
 ├── learning/
 │   └── notes.md
+├── notebooks/
+│   └── monte_carlo_options_analysis.ipynb
 ├── src/
 │   ├── returns.py
-│   └── gbm.py
+│   ├── gbm.py
+│   ├── payoff.py
+│   ├── monte_carlo.py
+│   ├── black_scholes.py
+│   └── american_option.py
+├── tests/
+│   └── test_models.py
 ├── README.md
 ├── requirements.txt
 └── .gitignore
 ```
 
-| File | Purpose |
-|---|---|
-| `src/returns.py` | Log returns, mean, variance, standard deviation, annualized volatility |
-| `src/gbm.py` | Simulated stock-price paths via Geometric Brownian Motion (GBM) |
-| `learning/notes.md` | Concepts, formulas, and observations from the project |
-
 ---
 
-## 1. Project Goal
+# 1. Project Goal
 
-Build a Monte Carlo–based options pricing model.
+Build a Monte Carlo-based options pricing model.
 
 ```text
-Historical Prices → Log Returns → Volatility → GBM → Simulated Price Paths → Option Payoffs → Monte Carlo Option Price
+Historical Prices
+      ↓
+Log Returns
+      ↓
+Volatility
+      ↓
+GBM
+      ↓
+Simulated Price Paths
+      ↓
+Terminal Prices ST
+      ↓
+Option Payoffs
+      ↓
+Risk-Neutral Pricing
+      ↓
+Monte Carlo Option Price
+      ↓
+Validation
+      ↓
+American Options
 ```
-
-**Status:** completed through simulated price paths.
 
 ---
 
-## 2. Returns
+# 2. Returns
 
-### 2.1 Simple Return
+## 2.1 Simple Return
 
-$$
-R_t = \frac{P_t - P_{t-1}}{P_{t-1}}
-$$
+\[
+R_t=\frac{P_t-P_{t-1}}{P_{t-1}}
+\]
 
-Simple returns are **not symmetric**: a 10% gain (100 → 110) is not offset by a 10% loss — going from 110 back to 100 is actually a −9.09% return.
-
-### 2.2 Log Return
-
-$$
-r_t = \ln\left(\frac{P_t}{P_{t-1}}\right)
-$$
-
-```python
-ret = math.log(prices[i] / prices[i - 1])
-```
-
-**Why log returns:** they are *additive* over time, since $\ln(a) + \ln(b) = \ln(ab)$:
-
-$$
-r_1 + r_2 = \ln\left(\frac{P_1}{P_0}\right) + \ln\left(\frac{P_2}{P_1}\right) = \ln\left(\frac{P_2}{P_0}\right)
-$$
-
-$$
-\boxed{\text{Sum of log returns} = \text{Total log return}}
-$$
-
-Verified numerically in `src/returns.py` for `prices = [100, 105, 103, 108, 106]` (sum and total agree to floating-point precision, ≈ 0.05827).
+A 10% gain and a 10% loss are not symmetric.
 
 ---
 
-## 3. Statistics of Returns
+## 2.2 Log Return
 
-### 3.1 Mean Return
+\[
+r_t=\ln\left(\frac{P_t}{P_{t-1}}\right)
+\]
 
-$$
-\bar{r} = \frac{\sum r_i}{n}
-$$
+Implemented in `src/returns.py`.
 
-```python
-mean_return = sum(returns) / len(returns)
-```
+Log returns are additive:
 
-### 3.2 Sample Variance & Bessel's Correction
+\[
+\ln(P_1/P_0)+\ln(P_2/P_1)
+=
+\ln(P_2/P_0)
+\]
 
-$$
-s^2 = \frac{\sum (r_i - \bar{r})^2}{n - 1}
-$$
+Therefore:
 
-```python
-squared_deviations = [(r - mean_return) ** 2 for r in returns]
-variance = sum(squared_deviations) / (len(squared_deviations) - 1)
-```
-
-We divide by $n-1$ rather than $n$ because this is a **sample** variance estimated from observed data — this adjustment is **Bessel's correction**.
-
-### 3.3 Standard Deviation & Volatility
-
-$$
-s = \sqrt{s^2}
-$$
-
-```python
-standard_deviation = math.sqrt(variance)
-```
-
-Standard deviation of returns is used directly as **volatility**: more spread in returns → higher standard deviation → higher volatility.
-
-### 3.4 Annualized Volatility
-
-Assuming 252 trading days/year, and since variance scales linearly with time (so standard deviation scales with $\sqrt{t}$):
-
-$$
-\sigma_{\text{annual}} = \sigma_{\text{daily}} \sqrt{252}
-$$
-
-```python
-annualized_volatility = standard_deviation * math.sqrt(252)
-```
-
-**Worked example:** daily $s \approx 0.0387 \Rightarrow \sigma_{\text{annual}} \approx 0.6147$ (≈ 61.47%).
+\[
+\boxed{\text{Sum of log returns}=\text{Total log return}}
+\]
 
 ---
 
-## 4. Standard Normal Distribution ($Z$)
+# 3. Return Statistics
 
-$$
-Z \sim N(0, 1)
-$$
+## Mean
+
+\[
+\bar r=\frac{\sum r_i}{n}
+\]
+
+## Sample Variance
+
+\[
+s^2=
+\frac{\sum(r_i-\bar r)^2}{n-1}
+\]
+
+The \(n-1\) denominator is Bessel's correction.
+
+## Standard Deviation
+
+\[
+s=\sqrt{s^2}
+\]
+
+Standard deviation measures the spread of returns and is used as volatility.
+
+## Annualized Volatility
+
+Assuming 252 trading days:
+
+\[
+\boxed{
+\sigma_{\text{annual}}
+=
+\sigma_{\text{daily}}\sqrt{252}
+}
+\]
+
+---
+
+# 4. Standard Normal Random Shock
+
+\[
+Z\sim N(0,1)
+\]
+
+In Python:
 
 ```python
 z = np.random.normal(0, 1)
 ```
 
-- Mean 0, standard deviation 1 — but individual draws are **not** bounded to $[-1, 1]$ (values like −3.56 or 3.73 are valid).
-- Also called a *standard normal random shock*.
-- In GBM, $Z$ is the source of randomness that makes each simulated path different.
+The theoretical mean is 0 and standard deviation is 1.
+
+Individual values are not restricted to \([-1,1]\).
+
+\(Z\) is the source of randomness in GBM.
 
 ---
 
-## 5. Geometric Brownian Motion (GBM)
+# 5. Geometric Brownian Motion
 
-$$
-\text{Price Change} = \text{Expected Component} + \text{Random Component}
-$$
+Continuous form:
 
-**Continuous-time:**
+\[
+dS=\mu Sdt+\sigma S\,dW
+\]
 
-$$
-dS = \mu S\,dt + \sigma S\,dW
-$$
+Discrete simulation form:
 
-**Discrete form used in simulation:**
+\[
+\boxed{
+S_{t+dt}
+=
+S_t
+\exp\left[
+\left(\mu-\frac{1}{2}\sigma^2\right)dt
++
+\sigma\sqrt{dt}Z
+\right]
+}
+\]
 
-$$
-S_{t+dt} = S_t \exp\left[\left(\mu - \tfrac{1}{2}\sigma^2\right) dt + \sigma \sqrt{dt}\, Z\right]
-$$
+The deterministic drift component is:
 
-| Symbol | Meaning |
-|---|---|
-| $S_t$ | current stock price |
-| $\mu$ | expected annual return |
-| $\sigma$ | annual volatility |
-| $dt$ | time step |
-| $Z$ | standard normal random shock |
+\[
+\left(\mu-\frac{1}{2}\sigma^2\right)dt
+\]
 
-The drift term $\left(\mu - \tfrac{1}{2}\sigma^2\right)dt$ is deterministic; $\sigma\sqrt{dt}\,Z$ is the random component that differentiates each path.
+The random component is:
 
-### Current parameters (`src/gbm.py`)
-
-```python
-S0 = 100
-mu = 0.08
-sigma = 0.20
-dt = 1 / 252
-steps = 252
-num_simulations = 3
-```
-
-i.e. $100 initial price, 8% expected annual return, 20% annual volatility, daily steps for one year, 3 simulated paths.
-
-### Building a path
-
-Each step uses the previous price: $S_1$ uses $S_0$, $S_2$ uses $S_1$, and generally $S_t$ uses $S_{t-1}$:
-
-```python
-paths[:, t] = paths[:, t - 1] * np.exp(
-    (mu - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * z
-)
-```
-
-A path is a chain: $S_0 \to S_1 \to S_2 \to \dots \to S_{252}$. Multiple paths (e.g. 3) all start from the same $S_0$ but diverge because each receives independent random shocks at every step.
+\[
+\sigma\sqrt{dt}Z
+\]
 
 ---
 
-## 6. Simulating Multiple Paths
+# 6. Price Paths
 
-### 6.1 The paths matrix
+A single path is:
+
+\[
+S_0\rightarrow S_1\rightarrow S_2\rightarrow\cdots\rightarrow S_T
+\]
+
+Each price uses the previous price:
+
+\[
+S_1\text{ uses }S_0
+\]
+
+\[
+S_2\text{ uses }S_1
+\]
+
+\[
+S_t\text{ uses }S_{t-1}
+\]
+
+Multiple simulations are stored in a matrix:
 
 ```python
 paths = np.zeros((num_simulations, steps + 1))
 ```
 
-- **Rows** = simulations/paths, **columns** = time points.
-- `steps + 1` columns, since `steps` movements produce `steps + 1` prices (including $S_0$). For `steps = 252`, that's 253 columns.
-- `paths[:, 0] = S0` initializes every path to the same starting price.
+Rows = simulations.
 
-### 6.2 Generating shocks per step
+Columns = time points.
 
-Every path needs its own shock at each time step:
+`steps + 1` is required because:
+
+```text
+5 steps:
+S0 → S1 → S2 → S3 → S4 → S5
+```
+
+contains 6 prices.
+
+The first column is initialized with:
 
 ```python
-z = np.random.normal(0, 1, num_simulations)   # one Z per simulation
+paths[:, 0] = S0
 ```
 
-New $Z$ values are drawn independently **every time step**, so each path evolves randomly across its full life (252 draws of `num_simulations` shocks each).
-
-### 6.3 Full loop and vectorization
+The last column contains terminal prices:
 
 ```python
-for t in range(1, steps + 1):
-    z = np.random.normal(0, 1, num_simulations)
-    paths[:, t] = paths[:, t - 1] * np.exp(
-        (mu - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * z
-    )
+terminal_prices = paths[:, -1]
 ```
 
-NumPy applies this element-wise across all simulations at once (**vectorization**) instead of looping over each path individually — with `steps = 252, num_simulations = 3`, `paths.shape == (3, 253)`.
-
-### 6.4 Future price vs. price path
-
-- **Future price** = one value at one future time point (e.g. $S_1 = 101.5$).
-- **Price path** = the full sequence $S_0 \to S_1 \to \dots \to S_{252}$.
-- **Monte Carlo simulation** = many simulated price paths together.
-
 ---
 
-## 7. Formula Reference
+# 7. Call Options
 
-| Concept | Formula |
-|---|---|
-| Simple return | $R_t = \dfrac{P_t - P_{t-1}}{P_{t-1}}$ |
-| Log return | $r_t = \ln\left(\dfrac{P_t}{P_{t-1}}\right)$ |
-| Mean return | $\bar{r} = \dfrac{\sum r_i}{n}$ |
-| Sample variance | $s^2 = \dfrac{\sum(r_i - \bar r)^2}{n-1}$ |
-| Standard deviation | $s = \sqrt{s^2}$ |
-| Annualized volatility | $\sigma_{\text{annual}} = \sigma_{\text{daily}}\sqrt{252}$ |
-| Standard normal shock | $Z \sim N(0,1)$ |
-| GBM (discrete) | $S_{t+dt} = S_t \exp\left[\left(\mu - \dfrac{\sigma^2}{2}\right)dt + \sigma\sqrt{dt}\,Z\right]$ |
+A call option gives the buyer the right, but not the obligation, to buy the underlying stock at the strike price.
 
----
+The strike price is:
 
-## 8. Code Overview
+\[
+K
+\]
 
-**`src/returns.py`**
+The current stock price and strike price are different quantities.
+
+Example:
+
 ```text
-Historical Prices → Log Returns → Mean Return → Variance → Standard Deviation → Annualized Volatility
+Current stock price = $100
+Strike price        = $110
 ```
 
-**`src/gbm.py`**
+The contract gives the right to buy at $110.
+
+The option premium is separate from the strike price.
+
+---
+
+# 8. Call Payoff
+
+At expiration:
+
+\[
+S_T=\text{stock price at expiration}
+\]
+
+The European call payoff is:
+
+\[
+\boxed{
+C_T=\max(S_T-K,0)
+}
+\]
+
+If:
+
+\[
+S_T>K
+\]
+
+the call is in the money.
+
+If:
+
+\[
+S_T=K
+\]
+
+it is at the money.
+
+If:
+
+\[
+S_T<K
+\]
+
+it is out of the money.
+
+Payoff is not the same as profit.
+
+\[
+\text{Profit}
+=
+\text{Payoff}
+-
+\text{Premium}
+\]
+
+---
+
+# 9. Terminal Prices and Payoffs
+
+The Monte Carlo connection is:
+
 ```text
-Initial Price S0 → Generate Z ~ N(0,1) → Apply GBM → Calculate S1 → S1 drives S2 → S2 drives S3 → ... → Complete Price Paths
+GBM
+ ↓
+Many price paths
+ ↓
+Take the last column
+ ↓
+Terminal prices ST
+ ↓
+Call payoff max(ST-K,0)
+ ↓
+Many simulated payoffs
+```
+
+For example:
+
+```text
+ST = [90, 100, 110, 120, 140]
+K  = 110
+
+Payoffs = [0, 0, 0, 10, 30]
+```
+
+Implemented in `src/payoff.py`.
+
+---
+
+# 10. Expected Payoff
+
+With \(N\) simulations:
+
+\[
+\boxed{
+E[C_T]
+\approx
+\frac{1}{N}
+\sum_{i=1}^{N}C_T^{(i)}
+}
+\]
+
+The summation simply adds all simulated payoffs.
+
+Dividing by \(N\) gives the average payoff.
+
+This is a Monte Carlo estimate of the expected payoff at expiration.
+
+---
+
+# 11. Discounting
+
+A future dollar is worth less than a dollar today because money can earn a return over time.
+
+The continuous-compounding discount factor is:
+
+\[
+e^{-rT}
+\]
+
+where:
+
+- \(r\) = risk-free rate
+- \(T\) = time to expiration
+
+Therefore:
+
+\[
+\boxed{
+V_0=e^{-rT}E[C_T]
+}
+\]
+
+---
+
+# 12. Risk-Neutral Pricing
+
+A crucial distinction:
+
+Historical simulation may use an estimated expected return:
+
+\[
+\mu
+\]
+
+But standard derivative pricing uses the **risk-neutral measure**.
+
+Under risk-neutral pricing, the drift becomes:
+
+\[
+\boxed{r}
+\]
+
+instead of the historical expected return \(\mu\).
+
+Therefore the pricing GBM is:
+
+\[
+\boxed{
+S_{t+dt}
+=
+S_t
+\exp\left[
+\left(r-\frac{1}{2}\sigma^2\right)dt
++
+\sigma\sqrt{dt}Z
+\right]
+}
+\]
+
+This is implemented in `src/monte_carlo.py`.
+
+---
+
+# 13. Monte Carlo European Option Price
+
+For a European call:
+
+\[
+C_T^{(i)}
+=
+\max(S_T^{(i)}-K,0)
+\]
+
+The Monte Carlo price is:
+
+\[
+\boxed{
+C_0
+\approx
+e^{-rT}
+\frac{1}{N}
+\sum_{i=1}^{N}
+\max(S_T^{(i)}-K,0)
+}
+\]
+
+The same structure applies to a put:
+
+\[
+\boxed{
+P_0
+\approx
+e^{-rT}
+\frac{1}{N}
+\sum_{i=1}^{N}
+\max(K-S_T^{(i)},0)
+}
+\]
+
+---
+
+# 14. Monte Carlo Standard Error
+
+Monte Carlo is an estimate and therefore contains sampling error.
+
+If \(s_{\text{payoff}}\) is the sample standard deviation of simulated payoffs:
+
+\[
+\boxed{
+SE
+=
+e^{-rT}
+\frac{s_{\text{payoff}}}{\sqrt{N}}
+}
+\]
+
+As \(N\) increases:
+
+\[
+SE\propto\frac{1}{\sqrt{N}}
+\]
+
+Therefore, reducing Monte Carlo error substantially requires many more simulations.
+
+---
+
+# 15. Confidence Interval
+
+An approximate 95% confidence interval is:
+
+\[
+\boxed{
+V_0\pm1.96SE
+}
+\]
+
+The confidence interval describes Monte Carlo sampling uncertainty.
+
+It does not mean that the underlying pricing model is necessarily correct.
+
+---
+
+# 16. Black-Scholes Validation
+
+For European options, we can compare Monte Carlo against the analytical Black-Scholes model.
+
+For a call:
+
+\[
+C=S_0N(d_1)-Ke^{-rT}N(d_2)
+\]
+
+where:
+
+\[
+d_1=
+\frac{
+\ln(S_0/K)+(r+\sigma^2/2)T
+}{
+\sigma\sqrt{T}
+}
+\]
+
+\[
+d_2=d_1-\sigma\sqrt{T}
+\]
+
+Black-Scholes provides a benchmark.
+
+As the number of Monte Carlo simulations increases, the Monte Carlo estimate should generally move closer to the Black-Scholes price, subject to random sampling error.
+
+Implemented in:
+
+```text
+src/black_scholes.py
 ```
 
 ---
 
-## 9. Next Step
+# 17. European vs American Options
 
-Convert simulated stock prices into option payoffs. For a call option:
+European:
 
-$$
-\text{Payoff} = \max(S_T - K, 0)
-$$
+```text
+Exercise only at expiration
+```
 
-To be implemented once the payoff concept is fully understood.
+American:
+
+```text
+Exercise at any time up to expiration
+```
+
+For European options we only need:
+
+\[
+S_T
+\]
+
+For American options we must consider exercise decisions at multiple time points.
+
+---
+
+# 18. Why Use an American Put?
+
+For a non-dividend-paying stock, an American call does not generally benefit from early exercise.
+
+Therefore an American put is a useful first example for demonstrating early exercise.
+
+The American put payoff is:
+
+\[
+\boxed{
+\max(K-S_t,0)
+}
+\]
+
+at any possible exercise time \(t\).
+
+---
+
+# 19. Longstaff-Schwartz Monte Carlo
+
+American option pricing introduces a decision:
+
+\[
+\boxed{
+\text{Exercise now OR continue holding?}
+}
+\]
+
+Longstaff-Schwartz estimates the continuation value using regression.
+
+At each exercise date:
+
+1. Find paths that are in the money.
+2. Calculate immediate exercise value.
+3. Estimate continuation value using regression.
+4. Exercise if immediate value is greater than continuation value.
+5. Work backward through time.
+
+The current educational implementation uses:
+
+\[
+1,\quad S,\quad S^2
+\]
+
+as regression basis functions.
+
+Implemented in:
+
+```text
+src/american_option.py
+```
+
+---
+
+# 20. Full Project Flow
+
+```text
+Historical Prices
+        ↓
+Log Returns
+        ↓
+Historical Volatility
+        ↓
+GBM
+        ↓
+Simulated Price Paths
+        ↓
+Terminal Prices
+        ↓
+Option Payoffs
+        ↓
+Expected Payoff
+        ↓
+Risk-Neutral Discounting
+        ↓
+Monte Carlo European Price
+        ↓
+Standard Error / Confidence Interval
+        ↓
+Black-Scholes Validation
+        ↓
+Convergence Analysis
+        ↓
+American Put
+        ↓
+Longstaff-Schwartz Early Exercise
+```
+
+---
+
+# 21. Current Code References
+
+`src/returns.py`
+
+```text
+Historical prices
+→ Log returns
+→ Mean
+→ Variance
+→ Standard deviation
+→ Annualized volatility
+```
+
+`src/gbm.py`
+
+```text
+Initial price
+→ Random shocks
+→ GBM
+→ Simulated price paths
+```
+
+`src/payoff.py`
+
+```text
+Terminal prices
+→ Call / put payoff
+```
+
+`src/monte_carlo.py`
+
+```text
+Risk-neutral GBM
+→ Terminal prices
+→ Payoffs
+→ Expected payoff
+→ Discounting
+→ European option price
+```
+
+`src/black_scholes.py`
+
+```text
+Inputs
+→ d1, d2
+→ Analytical European price
+```
+
+`src/american_option.py`
+
+```text
+Risk-neutral paths
+→ Work backwards
+→ Immediate exercise value
+→ Continuation regression
+→ Exercise decision
+→ American put price
+```
+
+---
+
+# 22. Important Modeling Distinction
+
+Historical expected return:
+
+\[
+\mu
+\]
+
+is useful when describing or simulating real-world stock behavior.
+
+Risk-neutral pricing uses:
+
+\[
+r
+\]
+
+as the drift.
+
+Therefore:
+
+```text
+Historical / real-world simulation:
+    drift = μ
+
+Option pricing:
+    drift = r
+```
+
+This distinction is fundamental.
+
+---
+
+# 23. Final Objective
+
+The project demonstrates:
+
+\[
+\boxed{
+\text{Statistics}
+\rightarrow
+\text{Stochastic Modeling}
+\rightarrow
+\text{Monte Carlo}
+\rightarrow
+\text{Derivative Pricing}
+}
+\]
+
+and eventually:
+
+\[
+\boxed{
+\text{European Pricing}
+\rightarrow
+\text{Validation}
+\rightarrow
+\text{American Early Exercise}
+}
+\]
+
+The goal is to understand the mathematics behind every stage and implement the model rather than treating the final price as a black box.
