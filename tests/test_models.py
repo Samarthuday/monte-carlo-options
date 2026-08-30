@@ -6,6 +6,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from american_option import price_american_put_lsm
+from binomial import price_american_put_binomial
 from black_scholes import black_scholes_call, black_scholes_put
 from gbm import simulate_gbm_paths
 from monte_carlo import price_european_option_mc
@@ -121,3 +122,27 @@ def test_american_put_at_least_european_put():
     # The American put must be worth at least as much as the
     # European put, since early exercise is an optional extra right.
     assert american_price >= european_price - 0.05
+
+
+def test_american_put_matches_binomial_benchmark():
+    S0, K, T, r, sigma = 100, 100, 1.0, 0.05, 0.20
+
+    # A converged CRR binomial tree is an independent ground truth
+    # that doesn't depend on the LSM regression at all. This is the
+    # check that actually catches a biased exercise policy: an
+    # overpriced American put can still satisfy
+    # `american >= european`, but it can't also match the binomial
+    # benchmark.
+    binomial_price = price_american_put_binomial(
+        S0=S0, K=K, T=T, r=r, sigma=sigma, steps=2000,
+    )
+
+    american_price, _, _ = price_american_put_lsm(
+        S0=S0, K=K, T=T, r=r, sigma=sigma,
+        steps=50, num_simulations=50_000, seed=42,
+    )
+
+    # LSM with a finite number of paths/exercise dates is only an
+    # approximation, so allow a modest tolerance rather than
+    # requiring an exact match.
+    assert abs(american_price - binomial_price) < 0.15

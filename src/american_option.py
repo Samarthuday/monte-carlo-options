@@ -86,10 +86,10 @@ def price_american_put_lsm(
     discount_one_step = math.exp(-r * dt)
 
     # At maturity, the only possible payoff is the immediate payoff.
+    # `cashflows[i]` always holds path i's best-known future cash flow,
+    # expressed in the dollars of whatever time step the backward loop
+    # has currently discounted to.
     cashflows = put_payoffs(paths[:, -1], K)
-
-    # True means that the option has not already been exercised.
-    alive = np.ones(num_simulations, dtype=bool)
 
     # Work backwards from the last exercise date to the first.
     for t in range(steps - 1, 0, -1):
@@ -101,11 +101,15 @@ def price_american_put_lsm(
 
         immediate_value = put_payoffs(stock_prices, K)
 
-        # Only paths that are:
-        # 1. still alive, and
-        # 2. in the money
-        # are candidates for exercise.
-        candidates = alive & (immediate_value > 0)
+        # Candidates for exercise are simply the paths that are in the
+        # money at this date. There is no notion of a path being
+        # "already exercised" and therefore excluded here: backward
+        # induction must be free to revisit and override a later
+        # (in-time) exercise decision with a better earlier one. The
+        # `cashflows` array is simply overwritten whenever exercising
+        # now beats the estimated continuation value, so no separate
+        # "alive" bookkeeping is needed or correct.
+        candidates = immediate_value > 0
 
         if np.count_nonzero(candidates) < 3:
             continue
@@ -135,16 +139,16 @@ def price_american_put_lsm(
         exercise_indices = candidate_indices[exercise]
 
         # Replace the discounted future cashflow with the
-        # immediate exercise payoff.
+        # immediate exercise payoff. This overrides whatever decision
+        # (exercise or continuation) was recorded at a later date.
         cashflows[exercise_indices] = (
             immediate_value[exercise_indices]
         )
 
-        # These paths have exercised and cannot exercise again.
-        alive[exercise_indices] = False
-
-    # After stepping all the way back to time 0, the cashflows
-    # are expressed in today's dollars.
+    # The loop above stops at t=1, so `cashflows` is currently
+    # expressed in time-1 dollars. Discount once more to bring
+    # everything back to today's (time-0) dollars.
+    cashflows *= discount_one_step
     price = np.mean(cashflows)
 
     return price, paths, cashflows
