@@ -66,6 +66,7 @@ graph LR
     Src --> MC[monte_carlo.py]
     Src --> BS[black_scholes.py]
     Src --> American[american_option.py]
+    Src --> Binomial[binomial.py]
 
     Root --> Tests[tests/]
     Tests --> TestModels[test_models.py]
@@ -86,6 +87,7 @@ See [Module Reference](#module-reference) below for what each file does.
 | `src/monte_carlo.py` | Prices European options using risk-neutral Monte Carlo |
 | `src/black_scholes.py` | Provides analytical European option prices for validation |
 | `src/american_option.py` | Prices an American put using Longstaff-Schwartz Monte Carlo |
+| `src/binomial.py` | Prices an American put using Cox-Ross-Rubinstein binomial tree (validation benchmark) |
 | `notebooks/monte_carlo_options_analysis.ipynb` | Visual analysis, plots, convergence, and model comparison |
 | `learning/notes.md` | Detailed mathematical learning notes |
 
