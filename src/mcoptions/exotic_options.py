@@ -180,19 +180,45 @@ def price_asian_arithmetic_mc(
 
 def _geometric_asian_price(S0, K, T, r, sigma, num_obs, q=0.0):
     """
-    Analytical price of geometric Asian option using Kemna-Vorst approximation.
+    Analytical price of geometric Asian option using exact distribution.
 
-    For num_obs >> 1, the geometric average of lognormal prices is
-    approximately lognormal, allowing closed-form valuation.
+    For equally-spaced observation times, the log-geometric average of
+    lognormal prices is exactly normal (under GBM), allowing closed-form
+    Black-Scholes-style valuation.
+
+    Parameters
+    ----------
+    num_obs : int
+        Number of observation dates (excluding t=0).
+
+    References
+    ----------
+    Kemna, A. G., Vorst, A. C. (1990). "A pricing method for options based
+    on average asset values." Journal of Banking & Finance, 14(1), 113–129.
     """
-    # Effective volatility for geometric average
-    sigma_g = sigma / math.sqrt(3.0)
+    # For m equally-spaced observations, exact mean and variance of log(G):
+    # E[log G] = log(S0) + (r - q - 0.5*sigma^2) * T * (m+1)/(2m)
+    # Var[log G] = sigma^2 * T * (m+1)*(2m+1) / (6*m^2)
 
-    # Effective drift
-    r_eff = (r - q - 0.5 * sigma**2) / 2.0 + 0.5 * sigma_g**2
+    m = num_obs
 
-    # Black-Scholes formula with adjusted parameters
-    from black_scholes import black_scholes_call
+    # Effective drift for geometric average
+    mu_g = (r - q - 0.5 * sigma**2) * T * (m + 1) / (2.0 * m)
+
+    # Effective variance of log-geometric average
+    var_log_g = sigma**2 * T * (m + 1) * (2 * m + 1) / (6.0 * m**2)
+    sigma_g = math.sqrt(var_log_g)
+
+    # Black-Scholes valuation with adjusted parameters
+    # G_T is lognormal with parameters (log(S0) + mu_g, sigma_g)
+    # This is equivalent to vanilla BS with S0, effective rate r_eff, vol sigma_g
+    from .black_scholes import black_scholes_call
+
+    # Adjusted risk-neutral parameters for the geometric average
+    # We want: E[log G_T] = log S0 + (r_eff - 0.5*sigma_g^2)*T
+    # where E[log G_T] = log S0 + (r - q - 0.5*sigma^2)*T*(m+1)/(2m)
+    # So: (r_eff - 0.5*sigma_g^2)*T = (r - q - 0.5*sigma^2)*T*(m+1)/(2m)
+    r_eff = (r - q - 0.5 * sigma**2) * (m + 1) / (2.0 * m) + 0.5 * sigma_g**2
 
     return black_scholes_call(S0, K, T, r_eff, sigma_g, q)
 
