@@ -200,8 +200,79 @@ def print_convergence_results(df, analytical_price):
     print("\n" + "=" * 100)
 
 
+def plot_convergence_rmse(df, analytical_price):
+    """Plot RMSE vs N on log-log axes with O(N^-1/2) reference line."""
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("matplotlib not available for plotting")
+        return
+
+    plt.figure(figsize=(10, 6))
+
+    for method in df["method"].unique():
+        method_df = df[df["method"] == method].sort_values("N")
+        plt.loglog(method_df["N"], method_df["rmse"], marker="o", label=method, linewidth=2)
+
+    # Reference line: O(N^-1/2)
+    n_vals = np.array([df["N"].min(), df["N"].max()])
+    # Scale reference to match data approximately
+    scale = df["rmse"].iloc[0] * (df["N"].iloc[0] ** 0.5)
+    reference_rmse = scale / np.sqrt(n_vals)
+    plt.loglog(n_vals, reference_rmse, "k--", label="O(N^-1/2) reference", linewidth=1.5)
+
+    plt.xlabel("Number of Paths (N)")
+    plt.ylabel("Root Mean Square Error (RMSE)")
+    plt.title("Monte Carlo Convergence: RMSE vs. Number of Paths")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+
+    import pathlib
+    output_dir = pathlib.Path("results/figures")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_dir / "mc_convergence.png", dpi=150)
+    plt.close()
+    print(f"Saved: results/figures/mc_convergence.png")
+
+
+def plot_variance_reduction(df):
+    """Plot standard error comparison across methods."""
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("matplotlib not available for plotting")
+        return
+
+    plt.figure(figsize=(10, 6))
+
+    for method in df["method"].unique():
+        method_df = df[df["method"] == method].sort_values("N")
+        plt.loglog(method_df["N"], method_df["standard_error"], marker="o", label=method, linewidth=2)
+
+    plt.xlabel("Number of Paths (N)")
+    plt.ylabel("Standard Error (SE)")
+    plt.title("Variance Reduction: Standard Error Comparison")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+
+    import pathlib
+    output_dir = pathlib.Path("results/figures")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_dir / "variance_reduction.png", dpi=150)
+    plt.close()
+    print(f"Saved: results/figures/variance_reduction.png")
+
+
 if __name__ == "__main__":
+    import pathlib
+
     print("Running convergence analysis...")
+
+    # Create results directory
+    results_dir = pathlib.Path("results/data")
+    results_dir.mkdir(parents=True, exist_ok=True)
 
     # Run standard convergence experiment
     df, analytical = run_convergence_experiment(
@@ -218,5 +289,10 @@ if __name__ == "__main__":
     print_convergence_results(df, analytical)
 
     # Save results to CSV
-    df.to_csv("convergence_results.csv", index=False)
-    print("\nResults saved to convergence_results.csv")
+    df.to_csv(results_dir / "convergence_results.csv", index=False)
+    print(f"\nResults saved to results/data/convergence_results.csv")
+
+    # Generate plots
+    print("\nGenerating plots...")
+    plot_convergence_rmse(df, analytical)
+    plot_variance_reduction(df)

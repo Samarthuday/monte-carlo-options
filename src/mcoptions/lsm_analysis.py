@@ -37,6 +37,77 @@ except ImportError:
     from .binomial import price_american_put_binomial
 
 
+def compare_basis_functions(
+    S0=100,
+    K=100,
+    T=1.0,
+    r=0.05,
+    sigma=0.20,
+    steps=100,
+    num_simulations=50_000,
+    seed=42,
+):
+    """
+    Compare LSM pricing across different basis functions against CRR benchmark.
+
+    Returns a DataFrame with prices and errors for polynomial, normalized, and Laguerre bases.
+    """
+    crr_price = price_american_put_binomial(S0=S0, K=K, T=T, r=r, sigma=sigma, steps=1000)
+
+    results = []
+    for basis in ["polynomial", "normalized", "laguerre"]:
+        lsm_price, _, _, _ = price_american_put_lsm(
+            S0=S0, K=K, T=T, r=r, sigma=sigma,
+            steps=steps, num_simulations=num_simulations,
+            basis=basis, basis_degree=2, seed=seed,
+        )
+        error = abs(lsm_price - crr_price)
+        error_pct = 100.0 * error / crr_price
+
+        results.append({
+            "basis": basis,
+            "lsm_price": lsm_price,
+            "crr_price": crr_price,
+            "abs_error": error,
+            "error_pct": error_pct,
+        })
+
+    return pd.DataFrame(results)
+
+
+def estimate_exercise_boundary(
+    S0=100,
+    K=100,
+    T=1.0,
+    r=0.05,
+    sigma=0.20,
+    steps=100,
+    num_simulations=50_000,
+    basis="polynomial",
+    seed=42,
+):
+    """
+    Extract exercise boundary S*(t) from LSM backward induction.
+
+    Returns a DataFrame of (time, critical_stock_price) pairs.
+    """
+    _, _, _, boundary_dict = price_american_put_lsm(
+        S0=S0, K=K, T=T, r=r, sigma=sigma,
+        steps=steps, num_simulations=num_simulations,
+        basis=basis, basis_degree=2, seed=seed,
+    )
+
+    # Convert dict to DataFrame, dropping NaNs
+    times = []
+    prices = []
+    for t, s in sorted(boundary_dict.items()):
+        if not np.isnan(s):
+            times.append(t)
+            prices.append(s)
+
+    return pd.DataFrame({"time": times, "critical_price": prices})
+
+
 def analyze_lsm_convergence(
     S0=100,
     K=100,
@@ -45,7 +116,7 @@ def analyze_lsm_convergence(
     sigma=0.20,
     path_counts=None,
     exercise_steps=None,
-    num_trials=5,
+    num_trials=30,
 ):
     """
     Analyze LSM convergence as number of paths increases.
@@ -255,7 +326,14 @@ def print_lsm_analysis(conv_df, binomial_price):
 
 
 if __name__ == "__main__":
+    import os
+    import pathlib
+
     print("LSM American Put Pricing Analysis\n")
+
+    # Create results directory
+    results_dir = pathlib.Path("results/data")
+    results_dir.mkdir(parents=True, exist_ok=True)
 
     # Convergence analysis
     conv_df, binomial_price = analyze_lsm_convergence()
@@ -266,7 +344,19 @@ if __name__ == "__main__":
     sens_df = analyze_lsm_parameter_sensitivity()
     print(sens_df.to_string(index=False))
 
+    # Basis function comparison
+    print("\nBasis Function Comparison:")
+    basis_df = compare_basis_functions()
+    print(basis_df.to_string(index=False))
+
+    # Exercise boundary estimation
+    print("\nExercise Boundary:")
+    boundary_df = estimate_exercise_boundary()
+    print(f"Boundary has {len(boundary_df)} exercise points")
+
     # Save results
-    conv_df.to_csv("lsm_convergence.csv", index=False)
-    sens_df.to_csv("lsm_sensitivity.csv", index=False)
-    print("\nResults saved to lsm_convergence.csv and lsm_sensitivity.csv")
+    conv_df.to_csv(results_dir / "lsm_convergence.csv", index=False)
+    sens_df.to_csv(results_dir / "lsm_sensitivity.csv", index=False)
+    basis_df.to_csv(results_dir / "lsm_basis_comparison.csv", index=False)
+    boundary_df.to_csv(results_dir / "exercise_boundary.csv", index=False)
+    print(f"\nResults saved to results/data/")
