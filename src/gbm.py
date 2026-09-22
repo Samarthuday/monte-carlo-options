@@ -109,6 +109,7 @@ def simulate_gbm_terminal(
     sigma,
     T,
     num_simulations,
+    q=0.0,
     seed=None,
 ):
     """
@@ -118,7 +119,7 @@ def simulate_gbm_terminal(
     full path. This is computationally efficient: O(N) instead of O(N*steps).
 
     Uses the analytical solution:
-        S_T = S0 * exp((mu - 0.5*sigma^2)*T + sigma*sqrt(T)*Z)
+        S_T = S0 * exp((mu - q - 0.5*sigma^2)*T + sigma*sqrt(T)*Z)
     where Z ~ N(0, 1).
 
     Parameters
@@ -133,6 +134,8 @@ def simulate_gbm_terminal(
         Time to maturity in years.
     num_simulations : int
         Number of simulated paths.
+    q : float
+        Dividend yield (default 0).
     seed : int or None
         Random seed for reproducibility.
 
@@ -156,7 +159,7 @@ def simulate_gbm_terminal(
     z = rng.standard_normal(num_simulations)
 
     terminal_prices = S0 * np.exp(
-        (mu - 0.5 * sigma**2) * T + sigma * np.sqrt(T) * z
+        (mu - q - 0.5 * sigma**2) * T + sigma * np.sqrt(T) * z
     )
 
     return terminal_prices

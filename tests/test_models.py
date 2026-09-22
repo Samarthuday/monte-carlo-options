@@ -7,7 +7,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from american_option import price_american_put_lsm
 from binomial import price_american_put_binomial
-from black_scholes import black_scholes_call, black_scholes_put
+from black_scholes import (
+    black_scholes_call,
+    black_scholes_put,
+    delta_call,
+    delta_put,
+    gamma,
+    vega,
+)
 from gbm import simulate_gbm_paths
 from monte_carlo import price_european_option_mc, price_european_option_mc_terminal
 from payoff import call_payoff, call_payoffs, put_payoff, put_payoffs
@@ -90,6 +97,51 @@ def test_black_scholes_put_call_parity():
     rhs = S0 - K * np.exp(-r * T)
 
     assert np.isclose(lhs, rhs, atol=1e-8)
+
+
+def test_black_scholes_with_dividend_yield():
+    S0, K, T, r, sigma, q = 100, 110, 1.0, 0.05, 0.20, 0.02
+
+    # With dividend yield q, call price decreases (less valuable to hold stock)
+    call_no_div = black_scholes_call(S0, K, T, r, sigma, q=0.0)
+    call_with_div = black_scholes_call(S0, K, T, r, sigma, q=q)
+
+    assert call_with_div < call_no_div
+
+
+def test_black_scholes_greeks_call():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+
+    delta = delta_call(S0, K, T, r, sigma)
+    gamma_val = gamma(S0, K, T, r, sigma)
+    vega_val = vega(S0, K, T, r, sigma)
+
+    # Call delta should be between 0 and 1 (OTM call here, so < 0.5)
+    assert 0 < delta < 1
+    assert delta < 0.5  # OTM
+
+    # Gamma should be positive
+    assert gamma_val > 0
+
+    # Vega should be positive (call price increases with vol)
+    assert vega_val > 0
+
+
+def test_black_scholes_greeks_put():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+
+    delta = delta_put(S0, K, T, r, sigma)
+    gamma_val = gamma(S0, K, T, r, sigma)
+    vega_val = vega(S0, K, T, r, sigma)
+
+    # Put delta should be between -1 and 0 (OTM put, so > -1 but < 0)
+    assert -1 < delta < 0
+
+    # Gamma should be positive (same for calls and puts)
+    assert gamma_val > 0
+
+    # Vega should be positive (same for calls and puts)
+    assert vega_val > 0
 
 
 # --- monte_carlo.py --------------------------------------------------------

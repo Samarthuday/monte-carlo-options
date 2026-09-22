@@ -56,6 +56,7 @@ def price_european_option_mc(
     steps,
     num_simulations,
     option_type="call",
+    q=0.0,
     seed=None,
 ):
     """
@@ -64,16 +65,20 @@ def price_european_option_mc(
     Returns a dictionary so that we can inspect not only the price,
     but also the simulated terminal prices, payoffs, standard error,
     and confidence interval.
+
+    Parameters
+    ----------
+    q : float
+        Dividend yield (default 0).
     """
     if option_type not in {"call", "put"}:
         raise ValueError("option_type must be 'call' or 'put'.")
 
-    # IMPORTANT:
-    # For pricing, the GBM drift is r, not the historical expected
-    # return mu. This is risk-neutral pricing.
+    # For pricing, the GBM drift is r (risk-neutral drift), not the
+    # historical expected return mu.
     paths = simulate_gbm_paths(
         S0=S0,
-        mu=r,
+        mu=r - q,
         sigma=sigma,
         T=T,
         steps=steps,
@@ -128,6 +133,7 @@ def price_european_option_mc_terminal(
     sigma,
     num_simulations,
     option_type="call",
+    q=0.0,
     seed=None,
 ):
     """
@@ -136,10 +142,15 @@ def price_european_option_mc_terminal(
     This is more efficient than price_european_option_mc() because it only
     samples terminal prices S_T directly, without storing full paths.
 
-    Uses: S_T = S0 * exp((r - 0.5*sigma^2)*T + sigma*sqrt(T)*Z)
+    Uses: S_T = S0 * exp((r - q - 0.5*sigma^2)*T + sigma*sqrt(T)*Z)
 
     Returns a dictionary with price, standard error, and confidence interval.
     No path data is returned since we don't store paths.
+
+    Parameters
+    ----------
+    q : float
+        Dividend yield (default 0).
     """
     if option_type not in {"call", "put"}:
         raise ValueError("option_type must be 'call' or 'put'.")
@@ -150,6 +161,7 @@ def price_european_option_mc_terminal(
         sigma=sigma,
         T=T,
         num_simulations=num_simulations,
+        q=q,
         seed=seed,
     )
 
