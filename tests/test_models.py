@@ -1,13 +1,8 @@
-import sys
-from pathlib import Path
-
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-
-from american_option import price_american_put_lsm
-from binomial import price_american_put_binomial
-from black_scholes import (
+from mcoptions.american_option import price_american_put_lsm
+from mcoptions.binomial import price_american_put_binomial
+from mcoptions.black_scholes import (
     black_scholes_call,
     black_scholes_put,
     delta_call,
@@ -15,15 +10,18 @@ from black_scholes import (
     gamma,
     vega,
 )
-from gbm import simulate_gbm_paths
-from monte_carlo import price_european_option_mc, price_european_option_mc_terminal
-from payoff import call_payoff, call_payoffs, put_payoff, put_payoffs
-from returns import calculate_log_returns, calculate_statistics
-from variance_reduction import (
+from mcoptions.gbm import simulate_gbm_paths
+from mcoptions.mc_greeks import mc_delta, mc_gamma, mc_vega, mc_theta, mc_rho
+from mcoptions.monte_carlo import (
+    price_european_option_mc,
+    price_european_option_mc_terminal,
+)
+from mcoptions.payoff import call_payoff, call_payoffs, put_payoff, put_payoffs
+from mcoptions.returns import calculate_log_returns, calculate_statistics
+from mcoptions.variance_reduction import (
     price_european_option_mc_antithetic,
     price_european_option_mc_control_variate,
 )
-from mc_greeks import mc_delta, mc_gamma, mc_vega, mc_theta, mc_rho
 
 # --- payoff.py -------------------------------------------------------
 

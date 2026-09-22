@@ -1,5 +1,50 @@
+# Virtual environments
 venv/
 .venv/
-.env/
+env/
+ENV/
+.env
+.env.local
+
+# Python cache
 __pycache__/
-.vscode/settings.json
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg/
+dist/
+build/
+src/mcoptions.egg-info/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Analysis outputs
+*.csv
+convergence_results.csv
+lsm_convergence.csv
+lsm_sensitivity.csv
+
+# Misc
+*.log
+.mypy_cache/
+.ruff_cache/
