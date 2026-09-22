@@ -40,10 +40,10 @@ import math
 import numpy as np
 
 try:
-    from gbm import simulate_gbm_paths
+    from gbm import simulate_gbm_paths, simulate_gbm_terminal
     from payoff import call_payoffs, put_payoffs
 except ImportError:
-    from .gbm import simulate_gbm_paths
+    from .gbm import simulate_gbm_paths, simulate_gbm_terminal
     from .payoff import call_payoffs, put_payoffs
 
 
@@ -120,21 +120,111 @@ def price_european_option_mc(
     }
 
 
+def price_european_option_mc_terminal(
+    S0,
+    K,
+    T,
+    r,
+    sigma,
+    num_simulations,
+    option_type="call",
+    seed=None,
+):
+    """
+    Price a European call or put using direct terminal-price sampling.
+
+    This is more efficient than price_european_option_mc() because it only
+    samples terminal prices S_T directly, without storing full paths.
+
+    Uses: S_T = S0 * exp((r - 0.5*sigma^2)*T + sigma*sqrt(T)*Z)
+
+    Returns a dictionary with price, standard error, and confidence interval.
+    No path data is returned since we don't store paths.
+    """
+    if option_type not in {"call", "put"}:
+        raise ValueError("option_type must be 'call' or 'put'.")
+
+    terminal_prices = simulate_gbm_terminal(
+        S0=S0,
+        mu=r,
+        sigma=sigma,
+        T=T,
+        num_simulations=num_simulations,
+        seed=seed,
+    )
+
+    if option_type == "call":
+        payoffs = call_payoffs(terminal_prices, K)
+    else:
+        payoffs = put_payoffs(terminal_prices, K)
+
+    discount_factor = math.exp(-r * T)
+
+    expected_payoff = np.mean(payoffs)
+    price = discount_factor * expected_payoff
+
+    payoff_std = np.std(payoffs, ddof=1)
+    standard_error = discount_factor * payoff_std / math.sqrt(
+        num_simulations
+    )
+
+    confidence_low = price - 1.96 * standard_error
+    confidence_high = price + 1.96 * standard_error
+
+    return {
+        "price": price,
+        "expected_payoff": expected_payoff,
+        "standard_error": standard_error,
+        "confidence_interval": (
+            confidence_low,
+            confidence_high,
+        ),
+        "terminal_prices": terminal_prices,
+        "payoffs": payoffs,
+    }
+
+
 if __name__ == "__main__":
-    # European call example.
-    result = price_european_option_mc(
-        S0=100,
-        K=110,
-        T=1.0,
-        r=0.05,
-        sigma=0.20,
+    import time
+
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+    num_sims = 100_000
+
+    # Full-path method (for comparison).
+    print("Full-path Monte Carlo:")
+    start = time.time()
+    result_full = price_european_option_mc(
+        S0=S0,
+        K=K,
+        T=T,
+        r=r,
+        sigma=sigma,
         steps=252,
-        num_simulations=100_000,
+        num_simulations=num_sims,
         option_type="call",
         seed=42,
     )
+    time_full = time.time() - start
+    print(f"  Price: ${result_full['price']:.4f}")
+    print(f"  SE: ${result_full['standard_error']:.6f}")
+    print(f"  Time: {time_full:.4f}s")
 
-    print("Monte Carlo call price:", result["price"])
-    print("Expected payoff:", result["expected_payoff"])
-    print("Standard error:", result["standard_error"])
-    print("95% CI:", result["confidence_interval"])
+    # Terminal-sampling method (efficient).
+    print("\nTerminal-sampling Monte Carlo:")
+    start = time.time()
+    result_terminal = price_european_option_mc_terminal(
+        S0=S0,
+        K=K,
+        T=T,
+        r=r,
+        sigma=sigma,
+        num_simulations=num_sims,
+        option_type="call",
+        seed=42,
+    )
+    time_terminal = time.time() - start
+    print(f"  Price: ${result_terminal['price']:.4f}")
+    print(f"  SE: ${result_terminal['standard_error']:.6f}")
+    print(f"  Time: {time_terminal:.4f}s")
+
+    print(f"\nSpeedup: {time_full/time_terminal:.2f}x")

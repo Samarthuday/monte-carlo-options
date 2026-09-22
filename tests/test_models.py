@@ -9,7 +9,7 @@ from american_option import price_american_put_lsm
 from binomial import price_american_put_binomial
 from black_scholes import black_scholes_call, black_scholes_put
 from gbm import simulate_gbm_paths
-from monte_carlo import price_european_option_mc
+from monte_carlo import price_european_option_mc, price_european_option_mc_terminal
 from payoff import call_payoff, call_payoffs, put_payoff, put_payoffs
 from returns import calculate_log_returns, calculate_statistics
 
@@ -106,6 +106,21 @@ def test_monte_carlo_call_converges_to_black_scholes():
 
     # Within a few standard errors of the analytical price.
     assert abs(mc["price"] - bs) < 5 * mc["standard_error"]
+
+
+def test_monte_carlo_terminal_sampling_matches_full_path():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+    bs = black_scholes_call(S0, K, T, r, sigma)
+
+    # Terminal sampling should converge to BS as well.
+    mc_terminal = price_european_option_mc_terminal(
+        S0=S0, K=K, T=T, r=r, sigma=sigma,
+        num_simulations=50_000,
+        option_type="call", seed=42,
+    )
+
+    # Should be within a few standard errors of analytical price.
+    assert abs(mc_terminal["price"] - bs) < 5 * mc_terminal["standard_error"]
 
 
 # --- american_option.py -----------------------------------------------

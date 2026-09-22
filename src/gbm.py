@@ -103,6 +103,65 @@ def simulate_gbm_paths(
     return paths
 
 
+def simulate_gbm_terminal(
+    S0,
+    mu,
+    sigma,
+    T,
+    num_simulations,
+    seed=None,
+):
+    """
+    Generate terminal stock prices directly without storing full paths.
+
+    For European options, we only need the terminal price ST, not the
+    full path. This is computationally efficient: O(N) instead of O(N*steps).
+
+    Uses the analytical solution:
+        S_T = S0 * exp((mu - 0.5*sigma^2)*T + sigma*sqrt(T)*Z)
+    where Z ~ N(0, 1).
+
+    Parameters
+    ----------
+    S0 : float
+        Initial stock price.
+    mu : float
+        Annual expected return / drift.
+    sigma : float
+        Annual volatility.
+    T : float
+        Time to maturity in years.
+    num_simulations : int
+        Number of simulated paths.
+    seed : int or None
+        Random seed for reproducibility.
+
+    Returns
+    -------
+    terminal_prices : np.ndarray
+        Shape: (num_simulations,)
+        Terminal stock prices S_T.
+    """
+    if S0 <= 0:
+        raise ValueError("S0 must be positive.")
+    if sigma < 0:
+        raise ValueError("sigma cannot be negative.")
+    if T <= 0:
+        raise ValueError("T must be positive.")
+    if num_simulations <= 0:
+        raise ValueError("num_simulations must be positive.")
+
+    rng = np.random.default_rng(seed)
+
+    z = rng.standard_normal(num_simulations)
+
+    terminal_prices = S0 * np.exp(
+        (mu - 0.5 * sigma**2) * T + sigma * np.sqrt(T) * z
+    )
+
+    return terminal_prices
+
+
 if __name__ == "__main__":
     # Learning example.
     S0 = 100
