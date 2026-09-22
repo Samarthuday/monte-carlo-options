@@ -233,7 +233,7 @@ def plot_convergence_rmse(df, analytical_price):
     output_dir.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_dir / "mc_convergence.png", dpi=150)
     plt.close()
-    print(f"Saved: results/figures/mc_convergence.png")
+    print("Saved: results/figures/mc_convergence.png")
 
 
 def plot_variance_reduction(df):
@@ -268,7 +268,6 @@ def plot_variance_reduction(df):
                         marker="s", label="Control Variate", linewidth=2)
 
     # Baseline: no reduction
-    n_min, n_max = df["N"].min(), df["N"].max()
     plt.axhline(1.0, color="k", linestyle="--", linewidth=1.5, label="No reduction (baseline)")
 
     plt.xlabel("Number of Paths (N)")
@@ -283,7 +282,7 @@ def plot_variance_reduction(df):
     output_dir.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_dir / "variance_reduction.png", dpi=150)
     plt.close()
-    print(f"Saved: results/figures/variance_reduction.png")
+    print("Saved: results/figures/variance_reduction.png")
 
 
 if __name__ == "__main__":
@@ -311,7 +310,7 @@ if __name__ == "__main__":
 
     # Save results to CSV
     df.to_csv(results_dir / "convergence_results.csv", index=False)
-    print(f"\nResults saved to results/data/convergence_results.csv")
+    print("\nResults saved to results/data/convergence_results.csv")
 
     # Generate plots
     print("\nGenerating plots...")

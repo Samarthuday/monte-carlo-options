@@ -3,7 +3,8 @@
 **A quantitative finance research package** studying Monte Carlo option pricing, variance reduction, convergence rates, Greeks estimation, and optimal stopping for early-exercise derivatives.
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-22%20passing-brightgreen)](tests/)
+[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-blue)](.github/workflows/tests.yml)
+[![Tests](https://img.shields.io/badge/tests-29%20passing-brightgreen)](tests/)
 [![Package](https://img.shields.io/badge/package-installable-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -13,17 +14,18 @@
 
 ### Pricing Accuracy & Convergence
 - **European MC converges to Black–Scholes** at empirical rate **O(N^−1/2)** ✓ verified across 1K–100K paths
-- **100K paths**: $6.0747 (MC) vs $6.0401 (BS) | error within 2 standard errors
-- **Terminal sampling**: 300× faster than full-path simulation (0.002s vs 0.58s)
+- **100K paths**: $6.0394 (MC) vs $6.0401 (BS) | error within 1 standard error
+- **Terminal sampling**: Efficient direct sampling without storing full paths
 
 ### Variance Reduction Achievements
-| Method | SE @ 50K paths | Variance Reduction | Speedup |
+| Method | SE @ 50K paths | Reduction Factor | Interpretation |
 |--------|----------------|--------------------|---------|
-| Standard MC | $0.0564 | baseline | 1.0× |
-| Antithetic Variates | $0.0339 | 40–50% | 1.2× |
-| Control Variates | $0.0289 | 40–45% | 240× |
+| Standard MC | $0.0562 | baseline | — |
+| Antithetic Variates | $0.0439 | 1.28× | SE reduced by 22% |
+| Control Variates | $0.0289 | 1.94× | SE reduced by 49% |
 
-**Arithmetic Asian with geometric control**: **599× variance reduction** on same computation
+**Reduction Factor**: How many times smaller the standard error is relative to Standard MC.  
+**Arithmetic Asian with geometric control**: ~80× variance reduction (geometric exactly matches log-normal distribution under GBM)
 
 ### Greeks & Risk Management
 - **MC Greeks vs analytical**: Delta ±0.002, Gamma ±0.0003, Vega ±0.001 | all with common random numbers
@@ -36,7 +38,21 @@
 
 ### Exotic Derivatives
 - **Arithmetic Asian pricing**: MC essential (no closed form)
-- **Geometric control variate**: 45–90% variance reduction without extra paths
+- **Geometric control variate**: ~80× variance reduction without extra paths
+
+---
+
+## Empirical Validation
+
+### Monte Carlo Convergence: O(N^-1/2) Verification
+Theoretical and empirical RMSE decline on log-log axes. All three variance-reduction methods follow the same convergence rate (parallel slopes), with variance reduction lowering the constant factor.
+
+![MC Convergence Plot](results/figures/mc_convergence.png)
+
+### Variance Reduction Factor by Method
+Antithetic Variates achieve ~1.2-1.5× reduction; Control Variates achieve ~1.8-2.3× reduction. The flat profiles show that reduction factors are stable across path counts.
+
+![Variance Reduction Factor Plot](results/figures/variance_reduction.png)
 
 ---
 
@@ -191,8 +207,9 @@ mcoptions/
 - Tests verify invariants, not just function execution
 
 ### Production-Ready Implementation
-- Type hints (Python 3.9+)
-- Comprehensive test suite (22 tests, all passing)
+- Type hints on all public functions (Python 3.9+)
+- Comprehensive test suite (29 tests, all passing)
+- GitHub Actions CI (Python 3.10, 3.11, 3.12)
 - Installable package via `pip install -e .`
 - Configurable: seeds, observation dates, basis functions
 
@@ -207,13 +224,12 @@ pytest -v
 ```
 
 Test coverage includes:
-- Payoff correctness (call, put, vectorized)
-- GBM path generation and shapes
-- Black-Scholes pricing vs. put-call parity
-- Monte Carlo convergence (vs. analytical)
-- Variance reduction efficacy
-- Greeks accuracy (analytical vs. MC)
-- American option validation (LSM vs. CRR)
+- **Pricing fundamentals**: Payoff correctness, GBM paths, Black-Scholes put-call parity
+- **Convergence & variance reduction**: MC convergence rate, antithetic/control-variate efficacy
+- **Greeks**: Delta, gamma, vega, theta, rho (analytical vs. Monte Carlo)
+- **American options**: LSM convergence, basis function comparison (polynomial/normalized/Laguerre), exercise boundary sanity
+- **Exotic derivatives**: Geometric Asian analytical validation, Asian control variate effectiveness
+- **Risk management**: Implied volatility recovery (Newton-Raphson & Brent), dividend-adjusted parity
 
 ---
 

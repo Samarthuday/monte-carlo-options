@@ -204,9 +204,6 @@ def _geometric_asian_price(S0: float, K: float, T: float, r: float, sigma: float
 
     m = num_obs
 
-    # Effective drift for geometric average
-    mu_g = (r - q - 0.5 * sigma**2) * T * (m + 1) / (2.0 * m)
-
     # Effective variance of log-geometric average
     var_log_g = sigma**2 * T * (m + 1) * (2 * m + 1) / (6.0 * m**2)
     sigma_g = math.sqrt(var_log_g)

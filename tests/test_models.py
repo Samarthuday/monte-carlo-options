@@ -11,7 +11,7 @@ from mcoptions.black_scholes import (
     vega,
 )
 from mcoptions.gbm import simulate_gbm_paths
-from mcoptions.mc_greeks import mc_delta, mc_gamma, mc_vega, mc_theta, mc_rho
+from mcoptions.mc_greeks import mc_delta, mc_gamma, mc_rho, mc_theta, mc_vega
 from mcoptions.monte_carlo import (
     price_european_option_mc,
     price_european_option_mc_terminal,

@@ -326,7 +326,6 @@ def print_lsm_analysis(conv_df, binomial_price):
 
 
 if __name__ == "__main__":
-    import os
     import pathlib
 
     print("LSM American Put Pricing Analysis\n")
@@ -359,4 +358,4 @@ if __name__ == "__main__":
     sens_df.to_csv(results_dir / "lsm_sensitivity.csv", index=False)
     basis_df.to_csv(results_dir / "lsm_basis_comparison.csv", index=False)
     boundary_df.to_csv(results_dir / "exercise_boundary.csv", index=False)
-    print(f"\nResults saved to results/data/")
+    print("\nResults saved to results/data/")
