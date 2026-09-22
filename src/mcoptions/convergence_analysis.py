@@ -237,22 +237,43 @@ def plot_convergence_rmse(df, analytical_price):
 
 
 def plot_variance_reduction(df):
-    """Plot price standard deviation comparison across methods."""
+    """Plot variance-reduction factor (σ_Standard / σ_Method) vs N.
+
+    Shows how much variance reduction each method achieves relative to standard MC.
+    A factor of 2.0 means the method has half the standard deviation.
+    """
     try:
         import matplotlib.pyplot as plt
     except ImportError:
         print("matplotlib not available for plotting")
         return
 
+    # Pivot so each N has columns for each method's price_std
+    pivot_df = df.pivot(index="N", columns="method", values="price_std")
+
     plt.figure(figsize=(10, 6))
 
-    for method in df["method"].unique():
-        method_df = df[df["method"] == method].sort_values("N")
-        plt.loglog(method_df["N"], method_df["price_std"], marker="o", label=method, linewidth=2)
+    # Compute reduction factors for Antithetic and Control Variate
+    if "Standard MC" in pivot_df.columns:
+        standard_std = pivot_df["Standard MC"]
+
+        if "Antithetic" in pivot_df.columns:
+            antithetic_factor = standard_std / pivot_df["Antithetic"]
+            plt.semilogx(antithetic_factor.index, antithetic_factor.values,
+                        marker="o", label="Antithetic", linewidth=2)
+
+        if "Control Variate" in pivot_df.columns:
+            control_factor = standard_std / pivot_df["Control Variate"]
+            plt.semilogx(control_factor.index, control_factor.values,
+                        marker="s", label="Control Variate", linewidth=2)
+
+    # Baseline: no reduction
+    n_min, n_max = df["N"].min(), df["N"].max()
+    plt.axhline(1.0, color="k", linestyle="--", linewidth=1.5, label="No reduction (baseline)")
 
     plt.xlabel("Number of Paths (N)")
-    plt.ylabel("Standard Deviation of Estimates")
-    plt.title("Variance Reduction: Standard Deviation Comparison")
+    plt.ylabel("Reduction Factor (σ_Standard / σ_Method)")
+    plt.title("Variance Reduction Factor by Method")
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
