@@ -117,10 +117,10 @@ def gamma(S0, K, T, r, sigma, q=0.0):
 def vega(S0, K, T, r, sigma, q=0.0):
     """Vega: rate of change with respect to volatility sigma.
 
-    Same for calls and puts. Returns change per 1% change in vol (not per 1.0).
+    Same for calls and puts. Returns dV/dsigma (price change per unit change in sigma).
     """
     d1, _ = d1_d2(S0, K, T, r, q, sigma)
-    return S0 * math.exp(-q * T) * standard_normal_pdf(d1) * math.sqrt(T) / 100.0
+    return S0 * math.exp(-q * T) * standard_normal_pdf(d1) * math.sqrt(T)
 
 
 def theta_call(S0, K, T, r, sigma, q=0.0):
@@ -161,16 +161,16 @@ def theta_put(S0, K, T, r, sigma, q=0.0):
 def rho_call(S0, K, T, r, sigma, q=0.0):
     """Rho of a European call: rate of change with respect to interest rate r.
 
-    Returns change per 1% change in rate (not per 1.0).
+    Returns dV/dr (price change per unit change in rate).
     """
     _, d2 = d1_d2(S0, K, T, r, q, sigma)
-    return K * T * math.exp(-r * T) * standard_normal_cdf(d2) / 100.0
+    return K * T * math.exp(-r * T) * standard_normal_cdf(d2)
 
 
 def rho_put(S0, K, T, r, sigma, q=0.0):
-    """Rho of a European put."""
+    """Rho of a European put: dV/dr."""
     _, d2 = d1_d2(S0, K, T, r, q, sigma)
-    return -K * T * math.exp(-r * T) * standard_normal_cdf(-d2) / 100.0
+    return -K * T * math.exp(-r * T) * standard_normal_cdf(-d2)
 
 
 if __name__ == "__main__":

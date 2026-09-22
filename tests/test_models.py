@@ -23,6 +23,7 @@ from variance_reduction import (
     price_european_option_mc_antithetic,
     price_european_option_mc_control_variate,
 )
+from mc_greeks import mc_delta, mc_gamma, mc_vega, mc_theta, mc_rho
 
 # --- payoff.py -------------------------------------------------------
 
@@ -268,3 +269,51 @@ def test_control_variate_reduces_variance():
     # Control variate should have lower or similar standard error.
     # Due to randomness, we just check it's a reasonable estimate.
     assert result_control["standard_error"] < result_standard["standard_error"] * 1.5
+
+
+# --- mc_greeks.py -----------------------------------------------
+
+
+def test_mc_delta_matches_analytical():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+
+    result = mc_delta(S0, K, T, r, sigma, 100_000, seed=42)
+
+    # MC delta should be close to analytical
+    assert abs(result["delta_mc"] - result["delta_bs"]) < 0.01
+
+
+def test_mc_gamma_matches_analytical():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+
+    result = mc_gamma(S0, K, T, r, sigma, 100_000, seed=42)
+
+    # MC gamma should be close to analytical
+    assert abs(result["gamma_mc"] - result["gamma_bs"]) < 0.001
+
+
+def test_mc_vega_matches_analytical():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+
+    result = mc_vega(S0, K, T, r, sigma, 100_000, seed=42)
+
+    # MC vega should be close to analytical
+    assert abs(result["vega_mc"] - result["vega_bs"]) < 1.0
+
+
+def test_mc_theta_matches_analytical():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+
+    result = mc_theta(S0, K, T, r, sigma, 100_000, seed=42)
+
+    # MC theta should be very close to analytical (least Monte Carlo noise)
+    assert abs(result["theta_mc"] - result["theta_bs"]) < 0.001
+
+
+def test_mc_rho_matches_analytical():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+
+    result = mc_rho(S0, K, T, r, sigma, 100_000, seed=42)
+
+    # MC rho should be close to analytical
+    assert abs(result["rho_mc"] - result["rho_bs"]) < 1.0
