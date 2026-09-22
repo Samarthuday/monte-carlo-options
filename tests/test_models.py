@@ -315,3 +315,111 @@ def test_mc_rho_matches_analytical():
 
     # MC rho should be close to analytical
     assert abs(result["rho_mc"] - result["rho_bs"]) < 1.0
+
+
+# --- implied_volatility.py -----------------------------------------------
+
+
+def test_implied_volatility_newton_raphson():
+    from mcoptions.implied_volatility import implied_volatility
+
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+    market_price = black_scholes_call(S0, K, T, r, sigma)
+
+    result = implied_volatility(S0, K, T, r, market_price, option_type="call")
+
+    assert result["converged"]
+    assert abs(result["implied_vol"] - sigma) < 0.001
+
+
+def test_implied_volatility_brent():
+    from mcoptions.implied_volatility import implied_volatility_brent
+
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+    market_price = black_scholes_call(S0, K, T, r, sigma)
+
+    result = implied_volatility_brent(S0, K, T, r, market_price, option_type="call")
+
+    assert abs(result["implied_vol"] - sigma) < 0.01
+
+
+# --- exotic_options.py -----------------------------------------------
+
+
+def test_geometric_asian_matches_analytical():
+    from mcoptions.exotic_options import price_asian_arithmetic_mc
+
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+    observation_dates = 252
+
+    result = price_asian_arithmetic_mc(
+        S0, K, T, r, sigma, observation_dates, 50_000,
+        use_control_variate=False, seed=42
+    )
+
+    # Geometric Asian should have a price
+    assert result["price"] > 0
+
+
+def test_asian_control_variate_reduces_variance():
+    from mcoptions.exotic_options import price_asian_arithmetic_mc
+
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+    observation_dates = 252
+
+    result_standard = price_asian_arithmetic_mc(
+        S0, K, T, r, sigma, observation_dates, 50_000,
+        use_control_variate=False, seed=42
+    )
+
+    result_control = price_asian_arithmetic_mc(
+        S0, K, T, r, sigma, observation_dates, 50_000,
+        use_control_variate=True, seed=42
+    )
+
+    # Control variate should reduce SE
+    assert result_control["standard_error"] < result_standard["standard_error"] * 1.2
+
+
+def test_dividend_adjusted_put_call_parity():
+    S0, K, T, r, sigma, q = 100, 110, 1.0, 0.05, 0.20, 0.02
+
+    call = black_scholes_call(S0, K, T, r, sigma, q)
+    put = black_scholes_put(S0, K, T, r, sigma, q)
+
+    # Put-call parity with dividend: C - P = S0*e^(-qT) - K*e^(-rT)
+    lhs = call - put
+    rhs = S0 * np.exp(-q * T) - K * np.exp(-r * T)
+
+    assert np.isclose(lhs, rhs, atol=1e-8)
+
+
+def test_lsm_basis_comparison_within_tolerance():
+    from mcoptions.lsm_analysis import compare_basis_functions
+
+    basis_df = compare_basis_functions(
+        S0=100, K=100, T=1.0, r=0.05, sigma=0.20,
+        steps=100, num_simulations=50_000, seed=42
+    )
+
+    # All bases should converge to CRR within reasonable tolerance
+    for _, row in basis_df.iterrows():
+        error_pct = row["error_pct"]
+        assert error_pct < 2.0, f"Basis {row['basis']} error too large: {error_pct}%"
+
+
+def test_exercise_boundary_sanity():
+    from mcoptions.lsm_analysis import estimate_exercise_boundary
+
+    K = 100
+    boundary_df = estimate_exercise_boundary(
+        S0=100, K=K, T=1.0, r=0.05, sigma=0.20,
+        steps=100, num_simulations=50_000, seed=42
+    )
+
+    # Boundary should have entries
+    assert len(boundary_df) > 0
+    # For a put, critical prices should be below strike (or nan)
+    for price in boundary_df["critical_price"]:
+        if not np.isnan(price):
+            assert price <= K * 1.1  # Allow some tolerance

@@ -22,6 +22,8 @@ Techniques
    - Optimal β* = Cov(Y,X) / Var(X)
 """
 
+from __future__ import annotations
+
 import math
 
 import numpy as np
@@ -33,16 +35,16 @@ except ImportError:
 
 
 def price_european_option_mc_antithetic(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    num_simulations,
-    option_type="call",
-    q=0.0,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    num_simulations: int,
+    option_type: str = "call",
+    q: float = 0.0,
+    seed: int | None = None,
+) -> dict:
     """
     Price a European option using antithetic variate variance reduction.
 
@@ -124,16 +126,16 @@ def price_european_option_mc_antithetic(
 
 
 def price_european_option_mc_control_variate(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    num_simulations,
-    option_type="call",
-    q=0.0,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    num_simulations: int,
+    option_type: str = "call",
+    q: float = 0.0,
+    seed: int | None = None,
+) -> dict:
     """
     Price a European option using control variate variance reduction.
 

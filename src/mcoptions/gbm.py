@@ -26,18 +26,20 @@ For OPTION PRICING, we use the risk-neutral drift `r` instead.
 See `monte_carlo.py` for the pricing implementation.
 """
 
+from __future__ import annotations
+
 import numpy as np
 
 
 def simulate_gbm_paths(
-    S0,
-    mu,
-    sigma,
-    T,
-    steps,
-    num_simulations,
-    seed=None,
-):
+    S0: float,
+    mu: float,
+    sigma: float,
+    T: float,
+    steps: int,
+    num_simulations: int,
+    seed: int | None = None,
+) -> np.ndarray:
     """
     Generate multiple GBM price paths.
 
@@ -104,14 +106,14 @@ def simulate_gbm_paths(
 
 
 def simulate_gbm_terminal(
-    S0,
-    mu,
-    sigma,
-    T,
-    num_simulations,
-    q=0.0,
-    seed=None,
-):
+    S0: float,
+    mu: float,
+    sigma: float,
+    T: float,
+    num_simulations: int,
+    q: float = 0.0,
+    seed: int | None = None,
+) -> np.ndarray:
     """
     Generate terminal stock prices directly without storing full paths.
 

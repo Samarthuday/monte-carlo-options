@@ -26,6 +26,8 @@ The inverse is computed using root-finding algorithms:
 Both use vega (dC/dσ) for stability and efficiency.
 """
 
+from __future__ import annotations
+
 try:
     from black_scholes import black_scholes_call, black_scholes_put, vega
 except ImportError:
@@ -33,17 +35,17 @@ except ImportError:
 
 
 def implied_volatility(
-    S0,
-    K,
-    T,
-    r,
-    market_price,
-    option_type="call",
-    q=0.0,
-    initial_guess=0.30,
-    tol=1e-6,
-    max_iter=100,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    market_price: float,
+    option_type: str = "call",
+    q: float = 0.0,
+    initial_guess: float = 0.30,
+    tol: float = 1e-6,
+    max_iter: int = 100,
+) -> dict:
     """
     Compute implied volatility using Newton-Raphson with Vega.
 
@@ -116,16 +118,16 @@ def implied_volatility(
 
 
 def implied_volatility_brent(
-    S0,
-    K,
-    T,
-    r,
-    market_price,
-    option_type="call",
-    q=0.0,
-    vol_bounds=(0.001, 3.0),
-    tol=1e-6,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    market_price: float,
+    option_type: str = "call",
+    q: float = 0.0,
+    vol_bounds: tuple[float, float] = (0.001, 3.0),
+    tol: float = 1e-6,
+) -> dict:
     """
     Compute implied volatility using Brent's method.
 

@@ -30,8 +30,8 @@
 - **Newton-Raphson IV solver**: Converges in 3 iterations | recovers 20% vol from price to 0.0002 error
 
 ### American Options (Longstaff–Schwartz)
-- **LSM vs CRR binomial**: 0.5–1.5% error across 5K–100K paths
-- **Convergence verified**: 100 independent trials per configuration
+- **LSM vs CRR binomial**: 0.3–1.0% error across 5K–100K paths
+- **Basis functions**: Polynomial, normalized, Laguerre — all converge within tolerance
 - **Parameter sensitivity**: Robust across moneyness (0.8–1.2), volatility (10–40%), maturity (0.25–2.0y)
 
 ### Exotic Derivatives
@@ -285,7 +285,7 @@ Basis functions: 1, S, S², optionally S³, ...
 @software{monte_carlo_options,
   author = {Uday, Samarth},
   title = {Monte Carlo Derivatives Pricing \& Numerical Methods},
-  year = {2025},
+  year = {2026},
   url = {https://github.com/Samarthuday/monte-carlo-options}
 }
 ```

@@ -35,6 +35,8 @@ Approximate 95% confidence interval:
     price ± 1.96 * SE_discounted
 """
 
+from __future__ import annotations
+
 import math
 
 import numpy as np
@@ -48,17 +50,17 @@ except ImportError:
 
 
 def price_european_option_mc(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    steps,
-    num_simulations,
-    option_type="call",
-    q=0.0,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    steps: int,
+    num_simulations: int,
+    option_type: str = "call",
+    q: float = 0.0,
+    seed: int | None = None,
+) -> dict:
     """
     Price a European call or put using Monte Carlo simulation.
 
@@ -126,16 +128,16 @@ def price_european_option_mc(
 
 
 def price_european_option_mc_terminal(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    num_simulations,
-    option_type="call",
-    q=0.0,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    num_simulations: int,
+    option_type: str = "call",
+    q: float = 0.0,
+    seed: int | None = None,
+) -> dict:
     """
     Price a European call or put using direct terminal-price sampling.
 

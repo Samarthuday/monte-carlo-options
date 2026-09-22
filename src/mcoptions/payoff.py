@@ -20,20 +20,23 @@ max(S - K, 0) / max(K - S, 0) inline. That keeps the payoff definition
 in exactly one place.
 """
 
+from __future__ import annotations
+
 import numpy as np
+from numpy.typing import ArrayLike
 
 
-def call_payoff(S_T, K):
+def call_payoff(S_T: float, K: float) -> float:
     """Return the payoff of a single European call at expiration."""
     return max(S_T - K, 0.0)
 
 
-def put_payoff(S_T, K):
+def put_payoff(S_T: float, K: float) -> float:
     """Return the payoff of a single European put at expiration."""
     return max(K - S_T, 0.0)
 
 
-def call_payoffs(S_T, K):
+def call_payoffs(S_T: ArrayLike, K: float) -> np.ndarray:
     """
     Vectorized call payoffs for an array (or list) of terminal prices.
 
@@ -44,7 +47,7 @@ def call_payoffs(S_T, K):
     return np.maximum(S_T - K, 0.0)
 
 
-def put_payoffs(S_T, K):
+def put_payoffs(S_T: ArrayLike, K: float) -> np.ndarray:
     """Vectorized put payoffs for an array (or list) of terminal prices."""
     S_T = np.asarray(S_T, dtype=float)
     return np.maximum(K - S_T, 0.0)

@@ -27,10 +27,12 @@ CRR parameters:
     p  = (exp(r * dt) - d) / (u - d)
 """
 
+from __future__ import annotations
+
 import numpy as np
 
 
-def price_american_put_binomial(S0, K, T, r, sigma, steps=2000):
+def price_american_put_binomial(S0: float, K: float, T: float, r: float, sigma: float, steps: int = 2000) -> float:
     """
     Price an American put using a CRR binomial tree.
 

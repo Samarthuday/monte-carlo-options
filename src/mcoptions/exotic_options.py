@@ -26,6 +26,8 @@ The geometric Asian option is an excellent control variate because:
 3. Reduces variance by 80-90% without extra computational cost
 """
 
+from __future__ import annotations
+
 import math
 
 import numpy as np
@@ -37,17 +39,17 @@ except ImportError:
 
 
 def price_asian_arithmetic_mc(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    observation_dates,
-    num_simulations,
-    q=0.0,
-    seed=None,
-    use_control_variate=False,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    observation_dates: int | list,
+    num_simulations: int,
+    q: float = 0.0,
+    seed: int | None = None,
+    use_control_variate: bool = False,
+) -> dict:
     """
     Price arithmetic Asian option using Monte Carlo.
 
@@ -178,7 +180,7 @@ def price_asian_arithmetic_mc(
         }
 
 
-def _geometric_asian_price(S0, K, T, r, sigma, num_obs, q=0.0):
+def _geometric_asian_price(S0: float, K: float, T: float, r: float, sigma: float, num_obs: int, q: float = 0.0) -> float:
     """
     Analytical price of geometric Asian option using exact distribution.
 

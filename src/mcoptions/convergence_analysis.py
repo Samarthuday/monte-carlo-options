@@ -237,7 +237,7 @@ def plot_convergence_rmse(df, analytical_price):
 
 
 def plot_variance_reduction(df):
-    """Plot standard error comparison across methods."""
+    """Plot price standard deviation comparison across methods."""
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -248,11 +248,11 @@ def plot_variance_reduction(df):
 
     for method in df["method"].unique():
         method_df = df[df["method"] == method].sort_values("N")
-        plt.loglog(method_df["N"], method_df["standard_error"], marker="o", label=method, linewidth=2)
+        plt.loglog(method_df["N"], method_df["price_std"], marker="o", label=method, linewidth=2)
 
     plt.xlabel("Number of Paths (N)")
-    plt.ylabel("Standard Error (SE)")
-    plt.title("Variance Reduction: Standard Error Comparison")
+    plt.ylabel("Standard Deviation of Estimates")
+    plt.title("Variance Reduction: Standard Deviation Comparison")
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()

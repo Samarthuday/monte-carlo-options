@@ -29,6 +29,8 @@ is much less noisy than if using independent random numbers.
 Without CRN, you're measuring MC noise as much as the actual derivative.
 """
 
+from __future__ import annotations
+
 import math
 
 import numpy as np
@@ -60,17 +62,17 @@ except ImportError:
 
 
 def mc_delta(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    num_simulations,
-    option_type="call",
-    q=0.0,
-    bump_size=0.01,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    num_simulations: int,
+    option_type: str = "call",
+    q: float = 0.0,
+    bump_size: float = 0.01,
+    seed: int | None = None,
+) -> dict:
     """
     Estimate Delta using finite differences with common random numbers.
 
@@ -129,17 +131,17 @@ def mc_delta(
 
 
 def mc_gamma(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    num_simulations,
-    option_type="call",
-    q=0.0,
-    bump_size=0.01,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    num_simulations: int,
+    option_type: str = "call",
+    q: float = 0.0,
+    bump_size: float = 0.01,
+    seed: int | None = None,
+) -> dict:
     """
     Estimate Gamma using finite differences with common random numbers.
 
@@ -186,17 +188,17 @@ def mc_gamma(
 
 
 def mc_vega(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    num_simulations,
-    option_type="call",
-    q=0.0,
-    bump_size=0.01,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    num_simulations: int,
+    option_type: str = "call",
+    q: float = 0.0,
+    bump_size: float = 0.01,
+    seed: int | None = None,
+) -> dict:
     """
     Estimate Vega using finite differences with common random numbers.
 
@@ -245,16 +247,16 @@ def mc_vega(
 
 
 def mc_theta(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    num_simulations,
-    option_type="call",
-    q=0.0,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    num_simulations: int,
+    option_type: str = "call",
+    q: float = 0.0,
+    seed: int | None = None,
+) -> dict:
     """
     Estimate Theta (daily time decay) using finite differences.
 
@@ -313,17 +315,17 @@ def mc_theta(
 
 
 def mc_rho(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    num_simulations,
-    option_type="call",
-    q=0.0,
-    bump_size=0.01,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    num_simulations: int,
+    option_type: str = "call",
+    q: float = 0.0,
+    bump_size: float = 0.01,
+    seed: int | None = None,
+) -> dict:
     """
     Estimate Rho (interest rate sensitivity) using finite differences.
 

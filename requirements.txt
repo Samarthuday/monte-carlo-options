@@ -1,6 +1,1 @@
-numpy
-pandas
-matplotlib
-jupyter
-nbformat
-pytest
+-e .[dev]

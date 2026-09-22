@@ -32,20 +32,22 @@ Greeks (rate of change of option price):
     Rho = ∂V/∂r
 """
 
+from __future__ import annotations
+
 import math
 
 
-def standard_normal_cdf(x):
+def standard_normal_cdf(x: float) -> float:
     """Standard normal cumulative distribution function."""
     return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
 
 
-def standard_normal_pdf(x):
+def standard_normal_pdf(x: float) -> float:
     """Standard normal probability density function."""
     return math.exp(-0.5 * x**2) / math.sqrt(2.0 * math.pi)
 
 
-def d1_d2(S0, K, T, r, q, sigma):
+def d1_d2(S0: float, K: float, T: float, r: float, q: float, sigma: float) -> tuple[float, float]:
     """Calculate the Black-Scholes d1 and d2 terms.
 
     Parameters
@@ -70,7 +72,7 @@ def d1_d2(S0, K, T, r, q, sigma):
     return d1, d2
 
 
-def black_scholes_call(S0, K, T, r, sigma, q=0.0):
+def black_scholes_call(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Return the Black-Scholes European call price."""
     d1, d2 = d1_d2(S0, K, T, r, q, sigma)
 
@@ -80,7 +82,7 @@ def black_scholes_call(S0, K, T, r, sigma, q=0.0):
     )
 
 
-def black_scholes_put(S0, K, T, r, sigma, q=0.0):
+def black_scholes_put(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Return the Black-Scholes European put price."""
     d1, d2 = d1_d2(S0, K, T, r, q, sigma)
 
@@ -90,19 +92,19 @@ def black_scholes_put(S0, K, T, r, sigma, q=0.0):
     )
 
 
-def delta_call(S0, K, T, r, sigma, q=0.0):
+def delta_call(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Delta of a European call: rate of change with respect to S0."""
     d1, _ = d1_d2(S0, K, T, r, q, sigma)
     return math.exp(-q * T) * standard_normal_cdf(d1)
 
 
-def delta_put(S0, K, T, r, sigma, q=0.0):
+def delta_put(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Delta of a European put."""
     d1, _ = d1_d2(S0, K, T, r, q, sigma)
     return -math.exp(-q * T) * standard_normal_cdf(-d1)
 
 
-def gamma(S0, K, T, r, sigma, q=0.0):
+def gamma(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Gamma: second derivative with respect to S0.
 
     Same for calls and puts.
@@ -114,7 +116,7 @@ def gamma(S0, K, T, r, sigma, q=0.0):
     )
 
 
-def vega(S0, K, T, r, sigma, q=0.0):
+def vega(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Vega: rate of change with respect to volatility sigma.
 
     Same for calls and puts. Returns dV/dsigma (price change per unit change in sigma).
@@ -123,7 +125,7 @@ def vega(S0, K, T, r, sigma, q=0.0):
     return S0 * math.exp(-q * T) * standard_normal_pdf(d1) * math.sqrt(T)
 
 
-def theta_call(S0, K, T, r, sigma, q=0.0):
+def theta_call(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Theta of a European call: time decay (negative of time derivative).
 
     Returns daily theta (divided by 365).
@@ -142,7 +144,7 @@ def theta_call(S0, K, T, r, sigma, q=0.0):
     return (term1 + term2 + term3) / 365.0
 
 
-def theta_put(S0, K, T, r, sigma, q=0.0):
+def theta_put(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Theta of a European put."""
     if T <= 0:
         return 0.0
@@ -158,7 +160,7 @@ def theta_put(S0, K, T, r, sigma, q=0.0):
     return (term1 + term2 + term3) / 365.0
 
 
-def rho_call(S0, K, T, r, sigma, q=0.0):
+def rho_call(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Rho of a European call: rate of change with respect to interest rate r.
 
     Returns dV/dr (price change per unit change in rate).
@@ -167,7 +169,7 @@ def rho_call(S0, K, T, r, sigma, q=0.0):
     return K * T * math.exp(-r * T) * standard_normal_cdf(d2)
 
 
-def rho_put(S0, K, T, r, sigma, q=0.0):
+def rho_put(S0: float, K: float, T: float, r: float, sigma: float, q: float = 0.0) -> float:
     """Rho of a European put: dV/dr."""
     _, d2 = d1_d2(S0, K, T, r, q, sigma)
     return -K * T * math.exp(-r * T) * standard_normal_cdf(-d2)

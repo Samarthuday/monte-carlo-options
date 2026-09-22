@@ -6,10 +6,6 @@ Purpose
 Calculate historical log returns and estimate volatility from a series
 of historical stock prices.
 
-This file is intentionally written in a learning-friendly way. The
-calculations are shown explicitly rather than hidden inside a library
-call so the mathematics is easy to follow.
-
 Main formulas
 -------------
 Log return:
@@ -25,10 +21,13 @@ Annualized volatility:
     sigma_annual = sigma_daily * sqrt(252)
 """
 
+from __future__ import annotations
+
 import math
+from typing import Sequence
 
 
-def calculate_log_returns(prices):
+def calculate_log_returns(prices: Sequence[float]) -> list[float]:
     """Return the log return between each pair of consecutive prices."""
     returns = []
 
@@ -39,7 +38,7 @@ def calculate_log_returns(prices):
     return returns
 
 
-def calculate_statistics(returns, trading_days=252):
+def calculate_statistics(returns: Sequence[float], trading_days: int = 252) -> dict[str, float]:
     """
     Calculate mean return, sample variance, standard deviation,
     and annualized volatility.
@@ -73,8 +72,6 @@ def calculate_statistics(returns, trading_days=252):
 
 
 if __name__ == "__main__":
-    # Small educational example.
-    # In a real project, these would eventually come from market data.
     prices = [100, 105, 103, 108, 106]
 
     returns = calculate_log_returns(prices)

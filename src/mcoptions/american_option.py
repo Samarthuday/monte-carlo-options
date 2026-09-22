@@ -31,6 +31,8 @@ Regression basis families:
     - laguerre: weighted Laguerre polynomials
 """
 
+from __future__ import annotations
+
 import math
 
 import numpy as np
@@ -79,17 +81,17 @@ def _build_regression_basis(x: np.ndarray, K: float, basis: str, degree: int) ->
 
 
 def price_american_put_lsm(
-    S0,
-    K,
-    T,
-    r,
-    sigma,
-    steps=50,
-    num_simulations=50_000,
-    basis="polynomial",
-    basis_degree=2,
-    seed=None,
-):
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    steps: int = 50,
+    num_simulations: int = 50_000,
+    basis: str = "polynomial",
+    basis_degree: int = 2,
+    seed: int | None = None,
+) -> tuple[float, np.ndarray, np.ndarray, dict]:
     """
     Price an American put using Longstaff-Schwartz Monte Carlo.
 
