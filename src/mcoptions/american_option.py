@@ -25,18 +25,16 @@ At each exercise date:
     4. Exercise when immediate value > estimated continuation value.
     5. Work backwards through time.
 
-Regression basis used here:
-
-    1
-    S
-    S^2
-
-This is a simple educational implementation of Longstaff-Schwartz.
+Regression basis families:
+    - polynomial: powers of S [1, S, S^2, ...]
+    - normalized: powers of S/K [1, S/K, (S/K)^2, ...]
+    - laguerre: weighted Laguerre polynomials
 """
 
 import math
 
 import numpy as np
+from numpy.polynomial.laguerre import lagval
 
 try:
     from gbm import simulate_gbm_paths
@@ -44,6 +42,40 @@ try:
 except ImportError:
     from .gbm import simulate_gbm_paths
     from .payoff import put_payoffs
+
+
+def _build_regression_basis(x: np.ndarray, K: float, basis: str, degree: int) -> np.ndarray:
+    """
+    Build regression basis matrix for LSM continuation value estimation.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Stock prices at current time step (candidate paths).
+    K : float
+        Strike price.
+    basis : str
+        Type of basis: "polynomial", "normalized", or "laguerre".
+    degree : int
+        Degree of polynomial basis.
+
+    Returns
+    -------
+    np.ndarray
+        Design matrix of shape (len(x), degree + 1).
+    """
+    if basis == "polynomial":
+        return np.column_stack([x**i for i in range(degree + 1)])
+    elif basis == "normalized":
+        normalized = x / K
+        return np.column_stack([normalized**i for i in range(degree + 1)])
+    elif basis == "laguerre":
+        scaled = x / K
+        weight = np.exp(-scaled / 2.0)
+        laguerre_terms = [lagval(scaled, [1 if i == j else 0 for j in range(degree + 1)]) for i in range(degree + 1)]
+        return np.column_stack([weight * laguerre_terms[i] for i in range(degree + 1)])
+    else:
+        raise ValueError(f"Unknown basis: {basis}. Choose 'polynomial', 'normalized', or 'laguerre'.")
 
 
 def price_american_put_lsm(
@@ -54,10 +86,22 @@ def price_american_put_lsm(
     sigma,
     steps=50,
     num_simulations=50_000,
+    basis="polynomial",
+    basis_degree=2,
     seed=None,
 ):
     """
     Price an American put using Longstaff-Schwartz Monte Carlo.
+
+    Parameters
+    ----------
+    basis : str
+        Type of basis functions for regression:
+        - "polynomial": 1, S, S^2, ..., S^degree
+        - "normalized": 1, S/K, (S/K)^2, ..., (S/K)^degree
+        - "laguerre": Laguerre polynomials (advanced)
+    basis_degree : int
+        Degree of polynomial (2 for "polynomial" is standard).
 
     Returns
     -------
@@ -91,6 +135,9 @@ def price_american_put_lsm(
     # has currently discounted to.
     cashflows = put_payoffs(paths[:, -1], K)
 
+    # Track exercise boundary: S*(t) where exercise becomes optimal
+    exercise_boundary = {}
+
     # Work backwards from the last exercise date to the first.
     for t in range(steps - 1, 0, -1):
 
@@ -112,18 +159,14 @@ def price_american_put_lsm(
         candidates = immediate_value > 0
 
         if np.count_nonzero(candidates) < 3:
+            exercise_boundary[t * dt] = np.nan
             continue
 
         x = stock_prices[candidates]
         y = cashflows[candidates]
 
-        # Polynomial basis:
-        # 1, S, S^2
-        X = np.column_stack([
-            np.ones_like(x),
-            x,
-            x**2,
-        ])
+        # Build regression basis (polynomial, normalized, or Laguerre)
+        X = _build_regression_basis(x, K, basis, basis_degree)
 
         # Least-squares regression:
         # continuation value ≈ X @ coefficients
@@ -138,6 +181,12 @@ def price_american_put_lsm(
         candidate_indices = np.where(candidates)[0]
         exercise_indices = candidate_indices[exercise]
 
+        # Record exercise boundary: max stock price where exercise occurs
+        if np.any(exercise):
+            exercise_boundary[t * dt] = float(np.max(x[exercise]))
+        else:
+            exercise_boundary[t * dt] = np.nan
+
         # Replace the discounted future cashflow with the
         # immediate exercise payoff. This overrides whatever decision
         # (exercise or continuation) was recorded at a later date.
@@ -151,11 +200,11 @@ def price_american_put_lsm(
     cashflows *= discount_one_step
     price = np.mean(cashflows)
 
-    return price, paths, cashflows
+    return price, paths, cashflows, exercise_boundary
 
 
 if __name__ == "__main__":
-    price, _, _ = price_american_put_lsm(
+    price, _, _, boundary = price_american_put_lsm(
         S0=100,
         K=100,
         T=1.0,
@@ -167,3 +216,4 @@ if __name__ == "__main__":
     )
 
     print("American put price:", price)
+    print(f"Exercise boundary times: {sorted(boundary.keys())}")

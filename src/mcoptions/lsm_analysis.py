@@ -84,7 +84,7 @@ def analyze_lsm_convergence(
             lsm_prices = []
 
             for trial in range(num_trials):
-                price, _, _ = price_american_put_lsm(
+                price, _, _, _ = price_american_put_lsm(
                     S0=S0,
                     K=K,
                     T=T,
@@ -142,7 +142,7 @@ def analyze_lsm_parameter_sensitivity(
     print("Moneyness sensitivity...")
     for ratio in [0.80, 0.90, 1.00, 1.10, 1.20]:
         S = K * ratio
-        lsm_price, _, _ = price_american_put_lsm(
+        lsm_price, _, _, _ = price_american_put_lsm(
             S0=S,
             K=K,
             T=T,
@@ -171,7 +171,7 @@ def analyze_lsm_parameter_sensitivity(
     # Volatility study
     print("Volatility sensitivity...")
     for sigma in [0.10, 0.15, 0.20, 0.30, 0.40]:
-        lsm_price, _, _ = price_american_put_lsm(
+        lsm_price, _, _, _ = price_american_put_lsm(
             S0=S0,
             K=K,
             T=T,
@@ -200,7 +200,7 @@ def analyze_lsm_parameter_sensitivity(
     # Time to maturity study
     print("Time to maturity sensitivity...")
     for T_val in [0.25, 0.50, 1.00, 2.00]:
-        lsm_price, _, _ = price_american_put_lsm(
+        lsm_price, _, _, _ = price_american_put_lsm(
             S0=S0,
             K=K,
             T=T_val,

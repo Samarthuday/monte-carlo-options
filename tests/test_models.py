@@ -183,7 +183,7 @@ def test_monte_carlo_terminal_sampling_matches_full_path():
 def test_american_put_at_least_european_put():
     S0, K, T, r, sigma = 100, 100, 1.0, 0.05, 0.20
 
-    american_price, _, _ = price_american_put_lsm(
+    american_price, _, _, _ = price_american_put_lsm(
         S0=S0, K=K, T=T, r=r, sigma=sigma,
         steps=50, num_simulations=20_000, seed=42,
     )
@@ -207,7 +207,7 @@ def test_american_put_matches_binomial_benchmark():
         S0=S0, K=K, T=T, r=r, sigma=sigma, steps=2000,
     )
 
-    american_price, _, _ = price_american_put_lsm(
+    american_price, _, _, _ = price_american_put_lsm(
         S0=S0, K=K, T=T, r=r, sigma=sigma,
         steps=50, num_simulations=50_000, seed=42,
     )
