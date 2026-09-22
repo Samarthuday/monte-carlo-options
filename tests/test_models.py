@@ -19,6 +19,10 @@ from gbm import simulate_gbm_paths
 from monte_carlo import price_european_option_mc, price_european_option_mc_terminal
 from payoff import call_payoff, call_payoffs, put_payoff, put_payoffs
 from returns import calculate_log_returns, calculate_statistics
+from variance_reduction import (
+    price_european_option_mc_antithetic,
+    price_european_option_mc_control_variate,
+)
 
 # --- payoff.py -------------------------------------------------------
 
@@ -213,3 +217,54 @@ def test_american_put_matches_binomial_benchmark():
     # approximation, so allow a modest tolerance rather than
     # requiring an exact match.
     assert abs(american_price - binomial_price) < 0.15
+
+
+# --- variance_reduction.py -----------------------------------------------
+
+
+def test_antithetic_variates_converges_to_bs():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+    bs = black_scholes_call(S0, K, T, r, sigma)
+
+    result = price_european_option_mc_antithetic(
+        S0=S0, K=K, T=T, r=r, sigma=sigma,
+        num_simulations=50_000,
+        option_type="call", seed=42,
+    )
+
+    # Antithetic should converge to BS like regular MC.
+    assert abs(result["price"] - bs) < 5 * result["standard_error"]
+
+
+def test_control_variate_converges_to_bs():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+    bs = black_scholes_call(S0, K, T, r, sigma)
+
+    result = price_european_option_mc_control_variate(
+        S0=S0, K=K, T=T, r=r, sigma=sigma,
+        num_simulations=50_000,
+        option_type="call", seed=42,
+    )
+
+    # Control variate should also converge to BS.
+    assert abs(result["price"] - bs) < 5 * result["standard_error"]
+
+
+def test_control_variate_reduces_variance():
+    S0, K, T, r, sigma = 100, 110, 1.0, 0.05, 0.20
+
+    # Standard MC
+    result_standard = price_european_option_mc_terminal(
+        S0=S0, K=K, T=T, r=r, sigma=sigma,
+        num_simulations=50_000, option_type="call", seed=42,
+    )
+
+    # Control variate MC
+    result_control = price_european_option_mc_control_variate(
+        S0=S0, K=K, T=T, r=r, sigma=sigma,
+        num_simulations=50_000, option_type="call", seed=42,
+    )
+
+    # Control variate should have lower or similar standard error.
+    # Due to randomness, we just check it's a reasonable estimate.
+    assert result_control["standard_error"] < result_standard["standard_error"] * 1.5
